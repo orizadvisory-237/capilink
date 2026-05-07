@@ -1,0 +1,317 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+  engineType = "library"
+}
+
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  emailVerified     DateTime?
+  password          String?   // hashé avec bcrypt
+  nom               String?
+  prenom            String?
+  name              String?   // Global name for OAuth
+  image             String?   // Profile image for OAuth
+  telephone         String?
+  role              Role      @default(PORTEUR)
+  ville             String?
+  qualitePorteur    String?
+  secteurPrincipal  String?
+  sourceConnaissance String?
+  tentativesConnexion Int       @default(0)
+  compteVerrouille    Boolean   @default(false)
+  verrouillageExpireAt DateTime?
+  derniereConnexionAt DateTime?
+  derniereConnexionIP String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  projets           Projet[]
+  scoringsRealises  ScoreDetail[] @relation("Analyste")
+  contacts          ContactInvestisseur[] @relation("Investisseur")
+  sessions          Session[]
+  accounts          Account[]
+  journalSecurite   JournalSecurite[]
+}
+
+model Projet {
+  id                    String         @id @default(cuid())
+  reference             String         @unique // CAP-2025-XXXX
+  titre                 String
+  description           String
+  secteur               String
+  stade                 String
+  zoneGeographique      String[]
+  problemeResolu        String
+  solution              String
+  avantagesConcurrentiels String?
+  typeFinancement       TypeFinancement
+  montantRecherche      BigInt
+  montantMin            BigInt
+  montantMax            BigInt
+  utilisationFonds      String[]
+  caActuel              String
+  rentabilite           String
+  revenusGeneres        Boolean        @default(false)
+  dureeRevenus          String?
+  projectionCA          BigInt?
+  qualitePorteur        String
+  anneesExperience      String
+  diplome               String
+  experienceEntreprise  Boolean        @default(false)
+  membresCles           Json?          // Array de membres équipe
+  structureJuridique    String
+  numeroContribuable    String?
+  contentieux           String
+  forfait               Forfait
+  montantForfait        Int
+  paiementStatut        PaiementStatut @default(EN_ATTENTE)
+  paiementDate          DateTime?
+  statutScoring         StatutScoring  @default(EN_ATTENTE)
+  scoreTotal            Int?
+  published             Boolean        @default(false)
+  publishedAt           DateTime?
+  nombreVues            Int            @default(0)
+  porteurId             String
+  assigneA              String?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  porteur               User           @relation(fields: [porteurId], references: [id])
+  scoring               ScoreDetail?
+  documents             DocumentProjet[]
+  contacts              ContactInvestisseur[]
+  notifications         Notification[]
+}
+
+model ScoreDetail {
+  id                            String   @id @default(cuid())
+  projetId                      String   @unique
+  // Dimension 1 — Viabilité porteur /30
+  d1ExperienceSectorielle       Int      @default(0)
+  d1CompetencesGestion          Int      @default(0)
+  d1ResilienceEngagement        Int      @default(0)
+  d1Justifications              Json     @default("{}")
+  // Dimension 2 — Modèle économique /25
+  d2ClarteBM                    Int      @default(0)
+  d2RealismeProjections         Int      @default(0)
+  d2StructurationFonds          Int      @default(0)
+  d2Justifications              Json     @default("{}")
+  // Dimension 3 — Marché et traction /20
+  d3TailleMarche                Int      @default(0)
+  d3Traction                    Int      @default(0)
+  d3AvantagesConcurrentiels     Int      @default(0)
+  d3Justifications              Json     @default("{}")
+  // Dimension 4 — Structuration juridique /15
+  d4StructureLegale             Int      @default(0)
+  d4DocumentsFinanciers         Int      @default(0)
+  d4AbsenceContentieux          Int      @default(0)
+  d4Justifications              Json     @default("{}")
+  // Dimension 5 — Attractivité investisseur /10
+  d5ClarteOffre                 Int      @default(0)
+  d5PotentielRendement          Int      @default(0)
+  d5Justifications              Json     @default("{}")
+  // Synthèse
+  commentaireGlobal             String   @default("")
+  commentaireSyntheseInvestisseur String @default("")
+  statutChoisi                  StatutScoring?
+  brouillon                     Boolean  @default(true)
+  analysteId                    String
+  createdAt                     DateTime @default(now())
+  updatedAt                     DateTime @updatedAt
+
+  projet                        Projet   @relation(fields: [projetId], references: [id])
+  analyste                      User     @relation("Analyste", fields: [analysteId], references: [id])
+}
+
+model DocumentProjet {
+  id          String   @id @default(cuid())
+  projetId    String
+  nom         String
+  type        TypeDocument
+  url         String   // URL Supabase Storage
+  taille      Int      // bytes
+  verifie     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  projet      Projet   @relation(fields: [projetId], references: [id])
+}
+
+model ContactInvestisseur {
+  id              String   @id @default(cuid())
+  projetId        String
+  investisseurId  String?  // null si investisseur non inscrit
+  prenom          String
+  nom             String
+  email           String
+  telephone       String
+  qualite         String
+  pays            String
+  ticketHabituel  String
+  message         String
+  typeIntention   String
+  experienceAfrique Boolean @default(false)
+  alerteSecteurs  String[]
+  statutSuivi     StatutSuivi @default(NOUVEAU)
+  notesInternes   String   @default("")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  projet          Projet   @relation(fields: [projetId], references: [id])
+  investisseur    User?    @relation("Investisseur", fields: [investisseurId], references: [id])
+}
+
+model Notification {
+  id          String            @id @default(cuid())
+  projetId    String?
+  destinataire String           // email ou téléphone
+  canal       CanalNotification
+  type        TypeNotification
+  statut      StatutNotification @default(EN_ATTENTE)
+  contenu     String
+  messageId   String?           // ID retourné par Twilio/Resend
+  erreur      String?
+  envoyeAt    DateTime?
+  createdAt   DateTime          @default(now())
+
+  projet      Projet?           @relation(fields: [projetId], references: [id])
+}
+
+// NextAuth tables
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+  @@unique([identifier, token])
+}
+
+enum Role {
+  PORTEUR
+  INVESTISSEUR
+  ADMIN
+  ANALYSTE
+}
+
+enum TypeFinancement {
+  EQUITY
+  DETTE
+  SUBVENTION
+  LEASING
+  MIXTE
+}
+
+enum StatutScoring {
+  EN_ATTENTE
+  EN_COURS
+  PRIORITAIRE
+  STANDARD
+  ACCOMPAGNEMENT
+  REJETE
+}
+
+enum Forfait {
+  STARTER
+  GROWTH
+  PREMIUM
+}
+
+enum PaiementStatut {
+  EN_ATTENTE
+  CONFIRME
+  REMBOURSE
+}
+
+enum TypeDocument {
+  BUSINESS_PLAN
+  ETATS_FINANCIERS
+  STATUTS
+  PIECE_IDENTITE
+  AUTRE
+}
+
+enum CanalNotification {
+  EMAIL
+  WHATSAPP
+}
+
+enum TypeNotification {
+  ACCUSE_RECEPTION
+  PAIEMENT_CONFIRME
+  SCORING_DEMARRE
+  SCORING_TERMINE
+  PROJET_PUBLIE
+  CONTACT_INVESTISSEUR
+  RELANCE_PAIEMENT
+  ALERTE_DOSSIER_URGENT
+}
+
+enum StatutNotification {
+  EN_ATTENTE
+  ENVOYE
+  ECHEC
+}
+
+enum StatutSuivi {
+  NOUVEAU
+  CONTACTE
+  RDV_PLANIFIE
+  DEAL_EN_COURS
+  CLOTURE
+  ARCHIVE
+}
+
+model JournalSecurite {
+  id          String   @id @default(cuid())
+  userId      String?
+  type        TypeEvenementSecurite
+  ip          String
+  userAgent   String?
+  details     Json?
+  createdAt   DateTime @default(now())
+
+  user        User?    @relation(fields: [userId], references: [id])
+}
+
+enum TypeEvenementSecurite {
+  CONNEXION_REUSSIE
+  CONNEXION_ECHEC
+  COMPTE_VERROUILLE
+  MOT_DE_PASSE_CHANGE
+  DECONNEXION
+  TENTATIVE_ACCES_NON_AUTORISE
+  DOCUMENT_TELECHARGE
+  SCORING_MODIFIE
+  PROJET_PUBLIE
+  DONNEES_EXPORTEES
+}
