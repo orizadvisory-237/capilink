@@ -1,37 +1,52 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import bcrypt from "bcryptjs";
 import { inscriptionInvestisseurSchema } from "@/lib/validations/auth";
+import { avecGuard } from "@/lib/security/api-guard";
+import { hasherMotDePasse } from "@/lib/security/password";
+import { envoyerNotification } from "@/lib/notifications";
 
-export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json();
-    
-    const parsed = inscriptionInvestisseurSchema.safeParse(body);
-    if (!parsed.success) {
-      return NextResponse.json(
-        { erreur: "Données invalides", details: parsed.error.flatten() },
-        { status: 400 }
-      );
-    }
+/**
+ * POST /api/auth/register-investisseur
+ * Inscription d'un nouvel investisseur.
+ * SEC-06: Refactoré avec avecGuard (rate limiting + validation Zod)
+ *         et anti-énumération de comptes (réponse identique).
+ */
+export const POST = avecGuard(
+  {
+    schema: inscriptionInvestisseurSchema,
+    limiteur: 'inscription',
+  },
+  async (req, { body }) => {
+    const { email, password, nom, prenom, telephone } = body as any;
 
-    const { email, password, nom, prenom, telephone } = parsed.data;
+    // Toujours hasher pour timing constant (même si le compte existe)
+    const hashedPassword = await hasherMotDePasse(password);
 
-    // Vérifier si l'utilisateur existe déjà
     const userExists = await prisma.user.findUnique({
       where: { email },
     });
 
     if (userExists) {
+      // Anti-énumération : envoyer un email d'alerte et retourner la même réponse
+      try {
+        await envoyerNotification({
+          destinataireEmail: email,
+          canaux: ['EMAIL'],
+          type: 'ALERTE_DOSSIER_URGENT',
+          contexte: {
+            titreProjet: 'Tentative création compte investisseur (Déjà existant)',
+            prenomPorteur: prenom,
+            referenceProjet: 'N/A',
+          },
+        });
+      } catch {}
+
       return NextResponse.json(
-        { erreur: "Un compte existe déjà avec cette adresse email." },
-        { status: 400 }
+        { success: true, message: "Si l'email est valide, un lien vous a été envoyé." },
+        { status: 201 }
       );
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Créer le compte
     const user = await prisma.user.create({
       data: {
         email,
@@ -40,25 +55,18 @@ export async function POST(req: NextRequest) {
         prenom,
         telephone,
         role: "INVESTISSEUR",
-        emailVerified: new Date(), // En prod, on enverrait un lien d'activation
       },
     });
 
-    // Étape cruciale : Lier les anciennes demandes de contact à ce nouveau compte
+    // Lier les anciennes demandes de contact à ce nouveau compte
     await prisma.contactInvestisseur.updateMany({
       where: { email },
       data: { investisseurId: user.id },
     });
 
     return NextResponse.json(
-      { success: true, user: { id: user.id, email: user.email } },
+      { success: true, message: "Si l'email est valide, un lien vous a été envoyé." },
       { status: 201 }
     );
-  } catch (error) {
-    console.error("[Register Investisseur] Erreur:", error);
-    return NextResponse.json(
-      { erreur: "Erreur interne du serveur. Veuillez réessayer." },
-      { status: 500 }
-    );
   }
-}
+);

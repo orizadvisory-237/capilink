@@ -3,18 +3,18 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { contactCompletSchema } from '@/lib/validations/contact-investisseur'
 import { notifierPorteur } from '@/lib/notifications'
+import { avecGuard } from '@/lib/security/api-guard'
 
 /**
  * GET /api/contacts
  * Liste des contacts investisseurs (ADMIN/ANALYSTE uniquement).
  */
-export async function GET(req: NextRequest) {
-  try {
-    const session = await auth()
-    if (!session?.user || !['ADMIN', 'ANALYSTE'].includes(session.user.role as string)) {
-      return NextResponse.json({ erreur: 'Non autorisé' }, { status: 403 })
-    }
-
+export const GET = avecGuard(
+  {
+    rolesAutorises: ['ADMIN', 'ANALYSTE'],
+    limiteur: 'api',
+  },
+  async (req, { session }) => {
     const { searchParams } = new URL(req.url)
     const page = Math.max(1, parseInt(searchParams.get('page') ?? '1'))
     const limit = Math.min(100, parseInt(searchParams.get('limit') ?? '20'))
@@ -52,23 +52,31 @@ export async function GET(req: NextRequest) {
       contacts,
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     })
-  } catch (error) {
-    console.error('[Contacts GET] Erreur:', error)
-    return NextResponse.json(
-      { erreur: 'Erreur interne du serveur' },
-      { status: 500 }
-    )
   }
-}
+)
 
 /**
  * POST /api/contacts
- * Soumission d'une demande de contact par un investisseur (public, avec rate-limiting).
+ * Soumission d'une demande de contact par un investisseur.
+ * SEC-05: Désormais protégé par rate limiting via avecGuard().
  */
-export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json()
-    const { projetId, ...contactData } = body
+export const POST = avecGuard(
+  {
+    limiteur: 'contact',
+    schema: contactCompletSchema,
+  },
+  async (req, { body }) => {
+    // Extraire projetId du query string ou du body original
+    const url = new URL(req.url)
+    let projetId = url.searchParams.get('projetId')
+
+    // Si pas dans les query params, re-lire le body brut pour le projetId
+    if (!projetId) {
+      try {
+        const rawBody = await req.clone().json()
+        projetId = rawBody.projetId
+      } catch {}
+    }
 
     if (!projetId) {
       return NextResponse.json(
@@ -77,15 +85,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const parsed = contactCompletSchema.safeParse(contactData)
-    if (!parsed.success) {
-      return NextResponse.json(
-        { erreur: 'Données invalides', details: parsed.error.flatten() },
-        { status: 400 }
-      )
-    }
-
-    const data = parsed.data
+    const data = body as any
 
     const projet = await prisma.projet.findUnique({
       where: { id: projetId, published: true },
@@ -146,11 +146,5 @@ export async function POST(req: NextRequest) {
       },
       { status: 201 }
     )
-  } catch (error) {
-    console.error('[Contacts POST] Erreur:', error)
-    return NextResponse.json(
-      { erreur: 'Erreur interne du serveur' },
-      { status: 500 }
-    )
   }
-}
+)

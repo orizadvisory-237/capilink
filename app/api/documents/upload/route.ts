@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { uploadDocument } from '@/lib/supabase/storage'
+import { validerFichier, nomFichierSecurise } from '@/lib/security/file-validation'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB
 const TYPES_AUTORISES = [
@@ -50,7 +51,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ erreur: 'Non autorisé' }, { status: 403 })
     }
 
-    // Vérifications du fichier
+    // Vérifications du fichier — taille
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
         { erreur: 'Le fichier dépasse la taille maximale de 10 Mo' },
@@ -65,9 +66,21 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // SEC-11: Vérification magic bytes côté serveur (pas seulement le MIME déclaré)
+    const validation = await validerFichier(file)
+    if (!validation.valide) {
+      return NextResponse.json(
+        { erreur: validation.erreur || 'Fichier invalide' },
+        { status: 400 }
+      )
+    }
+
+    // Générer un nom de fichier sécurisé (anti path-traversal)
+    const secureName = nomFichierSecurise(file.name, projetId, typeDocument)
+
     // Upload vers Supabase Storage
     const buffer = Buffer.from(await file.arrayBuffer())
-    const result = await uploadDocument(projetId, buffer, file.name, file.type)
+    const result = await uploadDocument(projetId, buffer, secureName, file.type)
 
     if (!result.success) {
       return NextResponse.json(

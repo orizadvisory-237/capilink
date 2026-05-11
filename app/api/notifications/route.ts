@@ -1,8 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 
 export async function GET(req: Request) {
   try {
+    // SEC-03: Vérification authentification — route sensible (données personnelles)
+    const session = await auth();
+    if (!session?.user || !['ADMIN', 'ANALYSTE'].includes(session.user.role as string)) {
+      return NextResponse.json({ erreur: 'Non autorisé' }, { status: 403 });
+    }
+
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "50");

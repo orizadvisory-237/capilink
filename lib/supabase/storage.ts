@@ -34,13 +34,23 @@ export async function uploadDocument(
       return { success: false, erreur: error.message }
     }
 
-    const { data: urlData } = supabase.storage
+    // SEC-10: Utiliser signed URL au lieu de public URL pour les documents confidentiels
+    const { data: signedData, error: signedError } = await supabase.storage
       .from(BUCKET_NAME)
-      .getPublicUrl(path)
+      .createSignedUrl(path, 3600) // 1 heure d'expiration
+
+    if (signedError || !signedData) {
+      // Fallback : retourner le path pour reconstruction ultérieure
+      return {
+        success: true,
+        url: path, // On stocke le path, l'URL sera régénérée à chaque accès
+        path,
+      }
+    }
 
     return {
       success: true,
-      url: urlData.publicUrl,
+      url: signedData.signedUrl,
       path,
     }
   } catch (error) {
