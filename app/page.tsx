@@ -17,9 +17,9 @@ export default function LandingPage() {
             <Link href="#about" className="hover:text-[#0A1628]">À propos</Link>
           </nav>
           <div>
-            <Button variant="outline" className="text-[#0A1628] border-[#0A1628] hover:bg-[#0A1628] hover:text-white" asChild>
-              <Link href="/connexion">Connexion</Link>
-            </Button>
+            <Link href="/connexion" className="inline-flex h-9 items-center justify-center rounded-md border border-[#0A1628] bg-transparent px-4 text-sm font-medium text-[#0A1628] transition-colors hover:bg-[#0A1628] hover:text-white">
+              Connexion
+            </Link>
           </div>
         </div>
       </header>
