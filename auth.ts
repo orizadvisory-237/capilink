@@ -9,6 +9,9 @@ import { connexionSchema } from '@/lib/validations/auth'
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma) as any,
   session: { strategy: 'jwt' },
+  trustHost: true,
+  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
+  debug: process.env.NODE_ENV === 'development',
   providers: [
     GoogleProvider({
       clientId: process.env.AUTH_GOOGLE_ID,
