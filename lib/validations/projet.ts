@@ -99,7 +99,7 @@ export const inscriptionEtape1Schema = z
       .string()
       .min(1, "Le numéro de téléphone est requis")
       .regex(/^\+237\s?6\d{2}\s?\d{2}\s?\d{2}\s?\d{2}$/, "Format attendu : +237 6XX XX XX XX"),
-    motDePasse: z.string().min(8, "Le mot de passe doit faire au moins 8 caractères"),
+    motDePasse: z.string().min(10, "Le mot de passe doit faire au moins 10 caractères"),
     confirmationMotDePasse: z.string().min(1, "Veuillez confirmer votre mot de passe"),
     accepteConditions: z.literal(true, {
       error: "Vous devez accepter les conditions d'utilisation",

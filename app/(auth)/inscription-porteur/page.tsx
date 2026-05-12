@@ -131,7 +131,7 @@ export default function InscriptionPorteurPage() {
 
             <div>
               <label className="text-sm font-medium text-[#0A1628]">Mot de passe *</label>
-              <Input {...form1.register("motDePasse")} type="password" placeholder="Min. 8 caractères" />
+              <Input {...form1.register("motDePasse")} type="password" placeholder="Min. 10 caractères" />
               {form1.formState.errors.motDePasse && (
                 <p className="text-xs text-[#C0392B] mt-1">{form1.formState.errors.motDePasse.message}</p>
               )}

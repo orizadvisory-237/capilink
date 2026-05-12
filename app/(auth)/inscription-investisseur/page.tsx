@@ -152,7 +152,7 @@ export default function InscriptionInvestisseurPage() {
           <Input
             {...form.register("password")}
             type="password"
-            placeholder="••••••••"
+            placeholder="Min. 10 caractères"
             className="bg-gray-50 border-gray-200 focus:bg-white"
           />
           {form.formState.errors.password && (

@@ -3,15 +3,12 @@ import { PrismaAdapter } from '@auth/prisma-adapter'
 import Credentials from 'next-auth/providers/credentials'
 import GoogleProvider from 'next-auth/providers/google'
 import { prisma } from '@/lib/prisma'
-import bcrypt from 'bcryptjs'
 import { connexionSchema } from '@/lib/validations/auth'
+import { authConfig } from './auth.config'
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  ...authConfig,
   adapter: PrismaAdapter(prisma) as any,
-  session: { strategy: 'jwt' },
-  trustHost: true,
-  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
-  debug: process.env.NODE_ENV === 'development',
   providers: [
     GoogleProvider({
       clientId: process.env.AUTH_GOOGLE_ID,
@@ -27,23 +24,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           where: { email: parsed.data.email }
         })
 
-        // On importe dynamiquement pour éviter l'erreur dépendance circulaire si jamais
         const { verifierMotDePasse } = await import('@/lib/security/password')
         const { enregistrerTentativeConnexion } = await import('@/lib/security/account-lockout')
-        const { extraireIP } = await import('@/lib/security/rate-limiter')
         
-        // Simuler IP (On ne l'a pas directement dans Auth.js options sans passer par req, donc on injecte 'ip-inconnue' si nécessaire)
         const ip = 'ip-connexion'
 
         if (!user || !user.password) {
-           await verifierMotDePasse('dummy', 'dummy') // Timing constant
+           await verifierMotDePasse('dummy', 'dummy') 
            return null
         }
 
-        // Vérification avec la librairie durcie
         const match = await verifierMotDePasse(parsed.data.password, user.password)
         
-        // Journalisation de la tentative et application du lockout
         const { verrouille, messageErreur } = await enregistrerTentativeConnexion(user.id, match, ip)
         
         if (verrouille) throw new Error(messageErreur || 'Compte verrouillé')
@@ -61,12 +53,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     })
   ],
   callbacks: {
+    ...authConfig.callbacks,
     async jwt({ token, user, trigger }) {
       // Premier login ou rafraîchissement : charger le rôle depuis la BDD
       if (user) {
         token.id = user.id as string
         
-        // Handle Google OAuth name mapping
         if (user.name && !user.nom && !user.prenom) {
           const parts = user.name.split(' ')
           token.prenom = parts[0] || ''
@@ -89,27 +81,5 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       return token
     },
-    session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id as string
-        session.user.role = token.role as string
-        session.user.nom = token.nom as string
-        session.user.prenom = token.prenom as string
-      }
-      return session
-    },
-    async redirect({ url, baseUrl }) {
-      // Si c'est un chemin relatif, le garder
-      if (url.startsWith('/')) return `${baseUrl}${url}`
-      // Si c'est le même domaine, autoriser
-      if (url.startsWith(baseUrl)) return url
-      // Par défaut, rediriger vers le dashboard
-      return `${baseUrl}/dashboard`
-    }
-  },
-
-  pages: {
-    signIn: '/connexion',
-    error: '/connexion',
   }
 })
