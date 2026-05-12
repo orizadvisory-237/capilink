@@ -1,28 +1,24 @@
-import { getToken } from 'next-auth/jwt'
 import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { auth } from '@/auth'
 
-export async function middleware(req: NextRequest) {
+export default auth((req) => {
   const { pathname } = req.nextUrl
   
-  const token = await getToken({ 
-    req, 
-    secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
-    secureCookie: process.env.NODE_ENV === 'production',
-  })
+  // Dans NextAuth v5, req.auth contient la session complète
+  const user = req.auth?.user
 
   // Routes admin — ADMIN ou ANALYSTE uniquement
   if (pathname.startsWith('/admin')) {
-    if (!token) return NextResponse.redirect(new URL('/connexion', req.url))
-    if (!['ADMIN', 'ANALYSTE'].includes(token.role as string)) {
+    if (!user) return NextResponse.redirect(new URL('/connexion', req.url))
+    if (!['ADMIN', 'ANALYSTE'].includes(user.role as string)) {
       return NextResponse.redirect(new URL('/non-autorise', req.url))
     }
   }
 
   // Routes investigateur
   if (pathname.startsWith('/espace-investisseur')) {
-    if (!token) return NextResponse.redirect(new URL('/connexion', req.url))
-    if (token.role !== 'INVESTISSEUR' && !['ADMIN', 'ANALYSTE'].includes(token.role as string)) {
+    if (!user) return NextResponse.redirect(new URL('/connexion', req.url))
+    if (user.role !== 'INVESTISSEUR' && !['ADMIN', 'ANALYSTE'].includes(user.role as string)) {
       return NextResponse.redirect(new URL('/non-autorise', req.url))
     }
   }
@@ -30,14 +26,11 @@ export async function middleware(req: NextRequest) {
   // Routes porteur — ces routes sont protégées
   const porteurRoutes = ['/dashboard', '/mon-dossier', '/soumettre'];
   if (porteurRoutes.some(route => pathname.startsWith(route))) {
-    if (!token) return NextResponse.redirect(new URL('/connexion', req.url))
-    
-    // Si la route est '/soumettre' seul le rôle PORTEUR peut y accéder ?
-    // En fait "soumettre" devrait rediriger si pas connecté, mais c'est bon
+    if (!user) return NextResponse.redirect(new URL('/connexion', req.url))
   }
   
   return NextResponse.next()
-}
+})
 
 export const config = {
   matcher: ['/admin/:path*', '/dashboard/:path*', '/mon-dossier/:path*', '/soumettre/:path*', '/espace-investisseur/:path*']
