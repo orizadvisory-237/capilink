@@ -58,12 +58,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     })
   ],
   callbacks: {
-    jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
+      // Premier login ou rafraîchissement : charger le rôle depuis la BDD
       if (user) {
         token.id = user.id as string
-        token.role = user.role || 'PORTEUR'
         
-        // Handle Google OAuth mappings gracefully
+        // Handle Google OAuth name mapping
         if (user.name && !user.nom && !user.prenom) {
           const parts = user.name.split(' ')
           token.prenom = parts[0] || ''
@@ -71,6 +71,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         } else {
           token.nom = user.nom
           token.prenom = user.prenom
+        }
+
+        // Charger le rôle directement depuis la BDD (crucial pour Google OAuth)
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: user.id as string },
+            select: { role: true },
+          })
+          token.role = dbUser?.role || 'PORTEUR'
+        } catch {
+          token.role = user.role || 'PORTEUR'
         }
       }
       return token
@@ -83,6 +94,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.prenom = token.prenom as string
       }
       return session
+    },
+    async redirect({ url, baseUrl }) {
+      // Si c'est un chemin relatif, le garder
+      if (url.startsWith('/')) return `${baseUrl}${url}`
+      // Si c'est le même domaine, autoriser
+      if (url.startsWith(baseUrl)) return url
+      // Par défaut, rediriger vers le dashboard
+      return `${baseUrl}/dashboard`
     }
   },
 
