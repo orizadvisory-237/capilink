@@ -20,7 +20,7 @@ export const POST = avecGuard(
   },
   async (req, { session, body }) => {
     const { secteurs } = body as { secteurs: string[] }
-    const email = (session.user as { email?: string }).email
+    const email = (session as any)?.user?.email as string | undefined
 
     if (!email) {
       return NextResponse.json({ erreur: 'Email non trouvé' }, { status: 400 })
