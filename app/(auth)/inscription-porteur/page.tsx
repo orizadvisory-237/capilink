@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StepperHorizontal } from "@/components/porteur/StepperHorizontal";
 import { SECTEURS_ACTIVITE } from "@/lib/constants";
+import { Loader2 } from "lucide-react";
 import {
   inscriptionEtape1Schema,
   inscriptionEtape2Schema,
@@ -37,6 +38,8 @@ const SOURCES = [
 
 export default function InscriptionPorteurPage() {
   const [etape, setEtape] = useState(0);
+  const [errorGlobal, setErrorGlobal] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
   const form1 = useForm<Etape1Data>({
@@ -55,8 +58,53 @@ export default function InscriptionPorteurPage() {
 
   const handleEtape1 = form1.handleSubmit(() => setEtape(1));
 
-  const handleEtape2 = form2.handleSubmit(() => {
-    router.push("/connexion");
+  const handleEtape2 = form2.handleSubmit(async (data2) => {
+    setErrorGlobal(null);
+    setIsSubmitting(true);
+    try {
+      const data1 = form1.getValues();
+      const payload = {
+        nom: data1.nom,
+        prenom: data1.prenom,
+        email: data1.email,
+        telephone: data1.telephone,
+        password: data1.motDePasse,
+        ville: data2.ville,
+        qualitePorteur: data2.qualitePorteur,
+        secteurPrincipal: data2.secteurActivite,
+        sourceConnaissance: data2.sourceDecouverte,
+      };
+
+      const res = await fetch("/api/porteurs/inscription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.erreur || "Erreur lors de l'inscription");
+      }
+
+      // Connexion automatique après inscription
+      const signInResult = await signIn("credentials", {
+        redirect: false,
+        email: data1.email,
+        password: data1.motDePasse,
+      });
+
+      if (signInResult?.error) {
+        throw new Error("Inscription réussie, mais échec de connexion automatique. Veuillez vous connecter manuellement.");
+      }
+
+      router.push("/dashboard");
+      router.refresh();
+    } catch (err: any) {
+      setErrorGlobal(err.message || "Une erreur est survenue");
+    } finally {
+      setIsSubmitting(false);
+    }
   });
 
   return (
@@ -165,6 +213,11 @@ export default function InscriptionPorteurPage() {
         {/* ─── Étape 2 : Profil porteur ─── */}
         {etape === 1 && (
           <form onSubmit={handleEtape2} className="space-y-4">
+            {errorGlobal && (
+              <div className="p-3 text-sm text-[#C0392B] bg-red-50 border border-red-200 rounded-lg">
+                {errorGlobal}
+              </div>
+            )}
             <div>
               <label className="text-sm font-medium text-[#0A1628]">Qualité du porteur *</label>
               <div className="space-y-2 mt-2">
@@ -219,8 +272,14 @@ export default function InscriptionPorteurPage() {
               <Button type="button" variant="outline" onClick={() => setEtape(0)} className="flex-1">
                 ← Retour
               </Button>
-              <Button type="submit" className="flex-1 bg-[#C9A84C] hover:bg-[#b09240] text-[#0A1628] font-bold">
-                Créer mon compte
+              <Button type="submit" className="flex-1 bg-[#C9A84C] hover:bg-[#b09240] text-[#0A1628] font-bold" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 size={16} className="animate-spin" /> Inscription en cours...
+                  </span>
+                ) : (
+                  "Créer mon compte"
+                )}
               </Button>
             </div>
           </form>

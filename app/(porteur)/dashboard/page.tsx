@@ -109,7 +109,13 @@ export default function DashboardPorteurPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [today, setToday] = useState("");
+
   useEffect(() => {
+    setToday(new Date().toLocaleDateString("fr-FR", {
+      weekday: "long", year: "numeric", month: "long", day: "numeric",
+    }));
+
     const fetchData = async () => {
       try {
         const res = await fetch("/api/porteurs/mon-dossier");
@@ -129,10 +135,6 @@ export default function DashboardPorteurPage() {
     };
     fetchData();
   }, []);
-
-  const today = new Date().toLocaleDateString("fr-FR", {
-    weekday: "long", year: "numeric", month: "long", day: "numeric",
-  });
 
   if (isLoading) {
     return (

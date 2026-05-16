@@ -12,9 +12,11 @@ interface GuardOptions {
   schema?: ZodSchema
 }
 
+import { Session } from 'next-auth'
+
 type RouteHandler = (
   req: NextRequest,
-  context: { session: Extract<Awaited<ReturnType<typeof auth>>, { user: unknown }>; body?: unknown; params?: any }
+  context: { session: Session; body?: any; params?: any }
 ) => Promise<NextResponse>
 
 export function avecGuard(options: GuardOptions, handler: RouteHandler) {
@@ -91,7 +93,7 @@ export function avecGuard(options: GuardOptions, handler: RouteHandler) {
     // 4. Exécuter le handler
     try {
       // Cast the session context to ensure handler signatures accept it smoothly
-      return await handler(req, { session: session as never, body, params })
+      return await handler(req, { session: session as Session, body, params })
     } catch (error) {
       console.error('[API Error]', error)
       return NextResponse.json(

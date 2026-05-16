@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { ArrowLeft, FileText, Lock, Download, ShieldCheck } from "lucide-react";
 
-export default async function DataRoomPage({ params }: { params: { projetId: string } }) {
+export default async function DataRoomPage({ params }: { params: Promise<{ projetId: string }> }) {
   const session = await auth();
 
   if (!session?.user || session.user.role !== "INVESTISSEUR") {
@@ -18,10 +18,12 @@ export default async function DataRoomPage({ params }: { params: { projetId: str
     );
   }
 
+  const { projetId } = await params;
+
   // Vérifier l'autorisation : Le contact investisseur doit être au statut DEAL_EN_COURS
   const permission = await prisma.contactInvestisseur.findFirst({
     where: {
-      projetId: params.projetId,
+      projetId,
       investisseurId: session.user.id,
       statutSuivi: "DEAL_EN_COURS",
     },

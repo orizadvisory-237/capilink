@@ -15,7 +15,7 @@ export const POST = avecGuard(
     limiteur: 'inscription',
   },
   async (req, { body }) => {
-    const { email, password, nom, prenom, telephone } = body as any
+    const { email, password, nom, prenom, telephone, ville, qualitePorteur, secteurPrincipal, sourceConnaissance } = body as any
 
     // Toujours hasher le mot de passe pour le timing constant
     const hashMotDePasse = await hasherMotDePasse(password)
@@ -50,6 +50,10 @@ export const POST = avecGuard(
         nom,
         prenom,
         telephone: telephone ?? null,
+        ville: ville ?? null,
+        qualitePorteur: qualitePorteur ?? null,
+        secteurPrincipal: secteurPrincipal ?? null,
+        sourceConnaissance: sourceConnaissance ?? null,
         role: 'PORTEUR',
       },
       select: {

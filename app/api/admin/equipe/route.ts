@@ -1,14 +1,17 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { avecGuard } from "@/lib/security/api-guard";
+import { z } from "zod";
 
 /**
  * GET /api/admin/equipe
  * Liste les utilisateurs avec rôle ADMIN ou ANALYSTE
  * et le nombre de dossiers assignés à chacun.
  */
-export async function GET() {
-  try {
+export const GET = avecGuard(
+  { rolesAutorises: ["ADMIN"] },
+  async () => {
     const analystes = await prisma.user.findMany({
       where: {
         role: { in: ["ADMIN", "ANALYSTE"] },
@@ -30,7 +33,6 @@ export async function GET() {
       orderBy: { createdAt: "asc" },
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = analystes.map((a: any) => ({
       id: a.id,
       prenom: a.prenom || "—",
@@ -51,38 +53,27 @@ export async function GET() {
     }));
 
     return NextResponse.json({ success: true, analystes: result });
-  } catch (error) {
-    console.error("[API Equipe GET]", error);
-    return NextResponse.json(
-      { success: false, error: "Erreur serveur" },
-      { status: 500 }
-    );
   }
-}
+);
+
+const equipeCreationSchema = z.object({
+  email: z.string().email("Email invalide"),
+  role: z.enum(["ADMIN", "ANALYSTE"], { message: "Rôle invalide" }),
+  prenom: z.string().optional(),
+  nom: z.string().optional(),
+});
 
 /**
  * POST /api/admin/equipe
  * Créer un nouvel analyste avec un mot de passe temporaire.
- * Body: { email: string, role: "ADMIN" | "ANALYSTE", prenom?: string, nom?: string }
  */
-export async function POST(req: Request) {
-  try {
-    const body = await req.json();
-    const { email, role, prenom, nom } = body;
-
-    if (!email || !role) {
-      return NextResponse.json(
-        { success: false, error: "Email et rôle requis" },
-        { status: 400 }
-      );
-    }
-
-    if (!["ADMIN", "ANALYSTE"].includes(role)) {
-      return NextResponse.json(
-        { success: false, error: "Rôle invalide" },
-        { status: 400 }
-      );
-    }
+export const POST = avecGuard(
+  {
+    rolesAutorises: ["ADMIN"],
+    schema: equipeCreationSchema,
+  },
+  async (req, { body }) => {
+    const { email, role, prenom, nom } = body as z.infer<typeof equipeCreationSchema>;
 
     // Vérifier si l'email est déjà utilisé
     const existant = await prisma.user.findUnique({ where: { email } });
@@ -118,11 +109,5 @@ export async function POST(req: Request) {
       },
       motDePasseTemporaire: motDePasseTemp,
     });
-  } catch (error) {
-    console.error("[API Equipe POST]", error);
-    return NextResponse.json(
-      { success: false, error: "Erreur serveur" },
-      { status: 500 }
-    );
   }
-}
+);
