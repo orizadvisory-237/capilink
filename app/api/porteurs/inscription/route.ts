@@ -42,30 +42,34 @@ export const POST = avecGuard(
       return NextResponse.json({ success: true, message: 'Si l\'email existe, un lien vous a été envoyé.' }, { status: 201 })
     }
 
-    // Créer l'utilisateur
-    const user = await prisma.user.create({
-      data: {
-        email,
-        password: hashMotDePasse,
-        nom,
-        prenom,
-        telephone: telephone ?? null,
-        ville: ville ?? null,
-        qualitePorteur: qualitePorteur ?? null,
-        secteurPrincipal: secteurPrincipal ?? null,
-        sourceConnaissance: sourceConnaissance ?? null,
-        role: 'PORTEUR',
-      },
-      select: {
-        id: true,
-        email: true,
-        nom: true,
-        prenom: true,
-        role: true,
-        createdAt: true,
-      },
-    })
-
-    return NextResponse.json({ success: true, message: 'Compte créé avec succès.' }, { status: 201 })
+    try {
+      // Créer l'utilisateur
+      const user = await prisma.user.create({
+        data: {
+          email,
+          password: hashMotDePasse,
+          nom,
+          prenom,
+          telephone: telephone ?? null,
+          ville: ville ?? null,
+          qualitePorteur: qualitePorteur ?? null,
+          secteurPrincipal: secteurPrincipal ?? null,
+          sourceConnaissance: sourceConnaissance ?? null,
+          role: 'PORTEUR',
+        },
+        select: {
+          id: true,
+          email: true,
+          nom: true,
+          prenom: true,
+          role: true,
+          createdAt: true,
+        },
+      })
+      return NextResponse.json({ success: true, message: 'Compte créé avec succès.' }, { status: 201 })
+    } catch (e: any) {
+      console.error("[Prisma Create Error]", e);
+      return NextResponse.json({ erreur: e.message || String(e) }, { status: 400 })
+    }
   }
 )
