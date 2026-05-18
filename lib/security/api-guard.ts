@@ -94,10 +94,10 @@ export function avecGuard(options: GuardOptions, handler: RouteHandler) {
     try {
       // Cast the session context to ensure handler signatures accept it smoothly
       return await handler(req, { session: session as Session, body, params })
-    } catch (error) {
+    } catch (error: any) {
       console.error('[API Error]', error)
       return NextResponse.json(
-        { erreur: 'Une erreur interne est survenue.' },
+        { erreur: error.message || 'Une erreur interne est survenue.' },
         { status: 500 }
       )
     }
