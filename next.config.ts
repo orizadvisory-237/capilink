@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   // Externaliser Puppeteer et Chromium pour les fonctions Serverless
-  serverExternalPackages: ["puppeteer-core", "@sparticuz/chromium", "@prisma/client"],
+  serverExternalPackages: ["puppeteer-core", "@sparticuz/chromium"],
 
   eslint: {
     ignoreDuringBuilds: true,
