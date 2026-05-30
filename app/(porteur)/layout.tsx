@@ -1,7 +1,12 @@
 import Link from "next/link";
 import { User, FileText, PlusCircle, LayoutDashboard } from "lucide-react";
+import { auth } from "@/auth";
 
-export default function PorteurLayout({ children }: { children: React.ReactNode }) {
+export default async function PorteurLayout({ children }: { children: React.ReactNode }) {
+  const session = await auth();
+  const prenom = (session?.user as any)?.prenom || session?.user?.name?.split(" ")[0] || "";
+  const nom = (session?.user as any)?.nom || session?.user?.name?.split(" ").slice(1).join(" ") || "";
+  const displayName = prenom && nom ? `${prenom} ${nom.charAt(0)}.` : prenom || nom || "Porteur";
   return (
     <div className="flex h-screen bg-[#F8F6F1]">
       {/* Sidebar */}
@@ -36,7 +41,7 @@ export default function PorteurLayout({ children }: { children: React.ReactNode 
               <div className="w-8 h-8 rounded-full bg-[#0A1628] flex items-center justify-center text-white">
                 <User size={16} />
               </div>
-              <span className="font-medium text-sm hidden sm:block">Jean T.</span>
+              <span className="font-medium text-sm hidden sm:block">{displayName}</span>
             </div>
           </div>
         </header>
