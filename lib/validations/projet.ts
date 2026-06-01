@@ -9,7 +9,7 @@ export const sectionPresentationSchema = z.object({
   secteur: z.string().min(1, "Veuillez sélectionner un secteur d'activité"),
   description: z
     .string()
-    .min(100, "La description doit faire au moins 100 caractères")
+    .min(1, "La description est requise")
     .max(1000, "1000 caractères maximum"),
   stadeDeveloppement: z.string().min(1, "Veuillez sélectionner le stade de développement"),
   zonesGeographiques: z
