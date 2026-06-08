@@ -66,6 +66,7 @@ export default function SoumettreProjetPage() {
   const [step, setStep] = useState(0);
   const [showModal, setShowModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const {
     setProjetDraft, projetDraft,
     forfaitChoisi, setForfait,
@@ -125,10 +126,20 @@ export default function SoumettreProjetPage() {
     setProjetDraft(data as unknown as Partial<ProjetFormData>);
     setStep(2);
   });
-  const handleNext3 = form3.handleSubmit((data) => {
-    setProjetDraft(data as unknown as Partial<ProjetFormData>);
-    setStep(3);
-  });
+  const handleNext3 = form3.handleSubmit(
+    (data) => {
+      setFormError(null);
+      setProjetDraft(data as unknown as Partial<ProjetFormData>);
+      setStep(3);
+    },
+    (errors) => {
+      const firstField = Object.keys(errors)[0];
+      const firstError = (errors as any)[firstField]?.message || (errors as any)[firstField]?.root?.message || "Veuillez corriger les champs en erreur";
+      setFormError(typeof firstError === 'string' ? firstError : "Veuillez remplir tous les champs obligatoires");
+      // Scroll to top of form to show errors
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  );
 
   const handleDocUpload = useCallback(
     (doc: DocumentUploadItem) => addDocument(doc),
@@ -499,8 +510,9 @@ export default function SoumettreProjetPage() {
             <div className="bg-gray-50 rounded-lg p-4 space-y-3">
               <p className="text-sm text-[#6B7280]">Ajoutez jusqu&apos;à 3 membres clés</p>
               {[0, 1, 2].map((i) => (
-                <div key={i} className="grid grid-cols-3 gap-2">
-                  <Input placeholder="Prénom / Nom" {...form3.register(`membres.${i}.prenom`)} />
+                <div key={i} className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <Input placeholder="Prénom" {...form3.register(`membres.${i}.prenom`)} />
+                  <Input placeholder="Nom" {...form3.register(`membres.${i}.nom`)} />
                   <Input placeholder="Rôle" {...form3.register(`membres.${i}.role`)} />
                   <Input placeholder="Exp. (ans)" {...form3.register(`membres.${i}.anneesExperience`)} />
                 </div>
@@ -545,6 +557,12 @@ export default function SoumettreProjetPage() {
             </div>
             {form3.formState.errors.contentieux && <p className="text-xs text-[#C0392B] mt-1">{form3.formState.errors.contentieux.message}</p>}
           </div>
+
+          {formError && (
+            <div className="p-3 text-sm text-[#C0392B] bg-red-50 border border-red-200 rounded-lg">
+              ⚠️ {formError}
+            </div>
+          )}
 
           <div className="flex gap-3">
             <Button type="button" variant="outline" onClick={() => setStep(1)} className="flex-1">← Retour</Button>

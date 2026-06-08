@@ -46,10 +46,10 @@ export const sectionFinancesSchema = z.object({
 
 // ─── Section 3 : Profil du porteur et équipe ────────────────────
 const membreEquipeSchema = z.object({
-  prenom: z.string().min(1, "Prénom requis"),
-  nom: z.string().min(1, "Nom requis"),
-  role: z.string().min(1, "Rôle requis"),
-  anneesExperience: z.string().min(1, "Requis"),
+  prenom: z.string().optional().default(""),
+  nom: z.string().optional().default(""),
+  role: z.string().optional().default(""),
+  anneesExperience: z.string().optional().default(""),
 });
 
 export const sectionPorteurSchema = z.object({
