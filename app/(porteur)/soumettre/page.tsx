@@ -11,7 +11,6 @@ import { StepperHorizontal } from "@/components/porteur/StepperHorizontal";
 import { DocumentUpload } from "@/components/porteur/DocumentUpload";
 import { PrixCard } from "@/components/porteur/PrixCard";
 import { SECTEURS_ACTIVITE, TYPES_FINANCEMENT, FORFAITS } from "@/lib/constants";
-import { uploadDocumentClient } from "@/lib/supabase/client-storage";
 import {
   sectionPresentationSchema,
   sectionFinancesSchema,
@@ -163,14 +162,28 @@ export default function SoumettreProjetPage() {
       const payloadDocuments = [];
       const refId = session?.user?.id || "temp_user";
 
-      // 1. Upload des fichiers sur Supabase
+      // 1. Upload des fichiers via l'API serveur
       for (const doc of documentsUploades) {
         if (doc.fichier) {
-          const { publicUrl } = await uploadDocumentClient(doc.fichier, refId);
+          const formData = new FormData();
+          formData.append('file', doc.fichier);
+          formData.append('type', doc.type);
+
+          const uploadRes = await fetch('/api/documents/upload-temp', {
+            method: 'POST',
+            body: formData,
+          });
+
+          const uploadResult = await uploadRes.json();
+
+          if (!uploadRes.ok) {
+            throw new Error(uploadResult.erreur || `Échec de l'envoi du document ${doc.nom}`);
+          }
+
           payloadDocuments.push({
             nom: doc.nom,
             type: doc.type,
-            url: publicUrl,
+            url: uploadResult.publicUrl,
             taille: doc.taille
           });
         }
