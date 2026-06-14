@@ -20,7 +20,7 @@ export async function uploadDocumentClient(file: File, refId: string): Promise<{
 
   if (error) {
     console.error("Erreur d'upload Supabase (client):", error);
-    throw new Error(`Échec de l'envoi du document ${file.name}`);
+    throw new Error(`Échec de l'envoi du document ${file.name}: ${error.message || JSON.stringify(error)}`);
   }
 
   const { data: publicUrlData } = supabase.storage
