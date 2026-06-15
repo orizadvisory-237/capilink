@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { useAdminStore } from "@/lib/stores/admin-store";
 import { cn } from "@/lib/utils";
 import {
@@ -145,9 +145,22 @@ function AdminSidebar({ pathname, analysteConnecte, sidebarCollapsed, onNavClick
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { analysteConnecte, sidebarCollapsed, toggleSidebar } = useAdminStore();
+  const { data: session } = useSession();
+  const { analysteConnecte, setAnalysteConnecte, sidebarCollapsed, toggleSidebar } = useAdminStore();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [notifCount, setNotifCount] = useState(0);
+
+  useEffect(() => {
+    if (session?.user) {
+      const u = session.user as any;
+      setAnalysteConnecte({
+        id: u.id || "a1",
+        nom: u.nom || u.name?.split(" ").slice(1).join(" ") || "Ekotto",
+        prenom: u.prenom || u.name?.split(" ")[0] || "Marie",
+        role: (u.role === "ADMIN" || u.role === "ANALYSTE" ? u.role : "ANALYSTE") as "ADMIN" | "ANALYSTE"
+      });
+    }
+  }, [session, setAnalysteConnecte]);
 
   useEffect(() => {
     fetch("/api/notifications?limit=1")

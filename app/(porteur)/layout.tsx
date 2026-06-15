@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { User, FileText, PlusCircle, LayoutDashboard } from "lucide-react";
-import { auth } from "@/auth";
+import { User, FileText, PlusCircle, LayoutDashboard, LogOut } from "lucide-react";
+import { auth, signOut } from "@/auth";
 
 export default async function PorteurLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -28,6 +28,32 @@ export default async function PorteurLayout({ children }: { children: React.Reac
             <span>Mes Documents</span>
           </Link>
         </nav>
+        {/* Sidebar Footer with user info & logout */}
+        <div className="p-4 border-t mt-auto flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-8 h-8 rounded-full bg-[#0A1628] flex items-center justify-center text-white flex-shrink-0">
+              <User size={16} />
+            </div>
+            <div className="min-w-0">
+              <p className="font-medium text-sm text-[#0A1628] truncate">{displayName}</p>
+              <p className="text-xs text-gray-400 truncate">Porteur</p>
+            </div>
+          </div>
+          <form
+            action={async () => {
+              "use server";
+              await signOut({ redirectTo: "/connexion" });
+            }}
+          >
+            <button
+              type="submit"
+              className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-red-600 transition-colors"
+              title="Se déconnecter"
+            >
+              <LogOut size={16} />
+            </button>
+          </form>
+        </div>
       </aside>
 
       {/* Main content */}
@@ -42,6 +68,21 @@ export default async function PorteurLayout({ children }: { children: React.Reac
                 <User size={16} />
               </div>
               <span className="font-medium text-sm hidden sm:block">{displayName}</span>
+              <form
+                action={async () => {
+                  "use server";
+                  await signOut({ redirectTo: "/connexion" });
+                }}
+                className="inline-flex"
+              >
+                <button
+                  type="submit"
+                  className="p-1.5 rounded-full hover:bg-gray-100 text-gray-500 hover:text-red-600 transition-colors ml-1"
+                  title="Se déconnecter"
+                >
+                  <LogOut size={16} />
+                </button>
+              </form>
             </div>
           </div>
         </header>

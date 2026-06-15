@@ -41,6 +41,7 @@ interface AdminStore {
   sidebarCollapsed: boolean;
 
   // Actions scoring
+  setAnalysteConnecte: (user: { id: string; nom: string; prenom: string; role: "ADMIN" | "ANALYSTE" }) => void;
   initScoring: (projetId: string) => void;
   loadScoring: (projetId: string, scoringData: any) => void;
   setDimensionActive: (dim: 1 | 2 | 3 | 4 | 5) => void;
@@ -109,6 +110,8 @@ const DEFAULT_SCORING: AdminStore["scoringEnCours"] = {
 
 export const useAdminStore = create<AdminStore>((set, get) => ({
   analysteConnecte: { id: "a1", nom: "Ekotto", prenom: "Marie", role: "ADMIN" },
+
+  setAnalysteConnecte: (user) => set({ analysteConnecte: user }),
 
   scoringEnCours: { ...DEFAULT_SCORING },
 
