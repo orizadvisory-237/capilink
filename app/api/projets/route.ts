@@ -103,8 +103,9 @@ export const POST = avecGuard(
       )
     } catch (error) {
       console.error('[Projet] Erreur création:', error)
+      const msg = error instanceof Error ? error.message : String(error)
       return NextResponse.json(
-        { erreur: 'Erreur interne du serveur' },
+        { erreur: `Erreur création projet: ${msg}` },
         { status: 500 }
       )
     }

@@ -80,8 +80,9 @@ export const POST = avecGuard(
       })
     } catch (error) {
       console.error('[Upload-Temp] Erreur:', error)
+      const msg = error instanceof Error ? error.message : String(error)
       return NextResponse.json(
-        { erreur: 'Erreur interne du serveur' },
+        { erreur: `Erreur upload: ${msg}` },
         { status: 500 }
       )
     }
