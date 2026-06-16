@@ -9,7 +9,7 @@ import { prisma } from '@/lib/prisma'
 export async function GET() {
   try {
     const session = await auth()
-    if (!session?.user || session.user.role !== 'PORTEUR') {
+    if (!session?.user || !['PORTEUR', 'ADMIN', 'ANALYSTE'].includes(session.user.role as string)) {
       return NextResponse.json({ erreur: 'Non autorisé' }, { status: 401 })
     }
 

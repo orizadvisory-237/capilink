@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { User, FileText, PlusCircle, LayoutDashboard, LogOut } from "lucide-react";
+import { User, FileText, PlusCircle, LayoutDashboard, LogOut, Settings } from "lucide-react";
 import { auth, signOut } from "@/auth";
 
 export default async function PorteurLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
+  const role = session?.user?.role;
   const prenom = (session?.user as any)?.prenom || session?.user?.name?.split(" ")[0] || "";
   const nom = (session?.user as any)?.nom || session?.user?.name?.split(" ").slice(1).join(" ") || "";
   const displayName = prenom && nom ? `${prenom} ${nom.charAt(0)}.` : prenom || nom || "Porteur";
@@ -15,6 +16,12 @@ export default async function PorteurLayout({ children }: { children: React.Reac
           <Link href="/" className="text-xl font-serif font-bold text-[#0A1628]">Capilink</Link>
         </div>
         <nav className="flex-1 py-6 px-4 space-y-2">
+          {(role === "ADMIN" || role === "ANALYSTE") && (
+            <Link href="/admin/dashboard" className="flex items-center gap-3 px-3 py-2 rounded-md text-[#C9A84C] bg-[#C9A84C]/15 hover:bg-[#C9A84C]/25 font-bold mb-4 transition-colors">
+              <Settings size={18} />
+              <span>Back-office Admin</span>
+            </Link>
+          )}
           <Link href="/mon-dossier" className="flex items-center gap-3 px-3 py-2 rounded-md text-[#0A1628] bg-gray-50 hover:bg-gray-100 font-medium">
             <LayoutDashboard size={18} />
             <span>Mon Dossier</span>
@@ -36,7 +43,9 @@ export default async function PorteurLayout({ children }: { children: React.Reac
             </div>
             <div className="min-w-0">
               <p className="font-medium text-sm text-[#0A1628] truncate">{displayName}</p>
-              <p className="text-xs text-gray-400 truncate">Porteur</p>
+              <p className="text-xs text-gray-400 truncate">
+                {role === "ADMIN" ? "Administrateur" : role === "ANALYSTE" ? "Analyste" : "Porteur"}
+              </p>
             </div>
           </div>
           <form
@@ -62,7 +71,14 @@ export default async function PorteurLayout({ children }: { children: React.Reac
         <header className="h-16 bg-white border-b flex items-center justify-between px-6">
           <div className="md:hidden font-serif font-bold text-[#0A1628]">Capilink</div>
           <div className="flex-1 flex justify-end items-center gap-4">
-            <span className="text-sm text-[#6B7280] hidden sm:block">Espace Porteur</span>
+            <span className="text-sm text-[#6B7280] hidden sm:block">
+              {role === "ADMIN" || role === "ANALYSTE" ? "Mode Admin / Porteur" : "Espace Porteur"}
+            </span>
+            {(role === "ADMIN" || role === "ANALYSTE") && (
+              <Link href="/admin/dashboard" className="text-xs px-2.5 py-1 rounded bg-[#C9A84C]/15 text-[#C9A84C] hover:bg-[#C9A84C]/25 font-bold transition-colors">
+                Back-office
+              </Link>
+            )}
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-[#0A1628] flex items-center justify-center text-white">
                 <User size={16} />

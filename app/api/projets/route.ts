@@ -11,7 +11,7 @@ import { z } from 'zod'
  */
 export const POST = avecGuard(
   {
-    rolesAutorises: ['PORTEUR'],
+    rolesAutorises: ['PORTEUR', 'ADMIN', 'ANALYSTE'],
     schema: projetCompletSchema,
     limiteur: 'api', // Limiter pour éviter le spam DB
   },
