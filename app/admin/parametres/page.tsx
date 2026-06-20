@@ -245,14 +245,6 @@ export default function ParametresPage() {
                 className="w-full border rounded px-3 py-2 text-sm mt-1"
                 type="number"
               />
-            </div>
-            <button
-              onClick={() => showToast("Paramètres enregistrés avec succès !")}
-              className="px-4 py-2 bg-[#0A1628] text-white text-sm rounded hover:bg-[#0A1628]/90"
-            >
-              Enregistrer les modifications
-            </button>
-
             {/* ── Toggles fonctionnels ── */}
             <div className="border-t pt-6 mt-6 space-y-4">
               <h2 className="font-bold text-[#0A1628]">Options de la plateforme</h2>
@@ -309,6 +301,15 @@ export default function ParametresPage() {
                   </div>
                 </>
               )}
+            </div>
+
+            <div className="pt-4 border-t mt-6">
+              <button
+                onClick={() => showToast("Paramètres enregistrés avec succès !")}
+                className="px-4 py-2 bg-[#0A1628] text-white text-sm rounded hover:bg-[#0A1628]/90"
+              >
+                Enregistrer les modifications
+              </button>
             </div>
           </div>
         )}
