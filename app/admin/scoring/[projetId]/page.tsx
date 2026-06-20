@@ -418,21 +418,51 @@ export default function ScoringPage({ params }: { params: Promise<{ projetId: st
           {/* Documents */}
           <div className="bg-white rounded-lg border">
             <div className="p-4 border-b">
-              <h3 className="font-bold text-[#0A1628] text-sm">Documents</h3>
+              <h3 className="font-bold text-[#0A1628] text-sm">Documents du projet</h3>
             </div>
-            <div className="p-4 space-y-2">
-              {[
-                { label: "Business Plan", ok: hasBP },
-                { label: "États financiers", ok: hasFinanciers },
-                { label: "Statuts", ok: hasStatuts },
-              ].map(({ label, ok }) => (
-                <div key={label} className="flex items-center justify-between text-xs">
-                  <span className="text-[#6B7280]">{label}</span>
-                  <span className={ok ? "text-[#2D6A4F] font-medium" : "text-red-500"}>
-                    {ok ? "✓ Fourni" : "✗ Absent"}
-                  </span>
-                </div>
-              ))}
+            <div className="p-4 space-y-3">
+              {/* Checklist */}
+              <div className="space-y-1.5 border-b pb-3">
+                {[
+                  { label: "Business Plan", ok: hasBP },
+                  { label: "États financiers", ok: hasFinanciers },
+                  { label: "Statuts", ok: hasStatuts },
+                ].map(({ label, ok }) => (
+                  <div key={label} className="flex items-center justify-between text-xs">
+                    <span className="text-[#6B7280]">{label}</span>
+                    <span className={ok ? "text-[#2D6A4F] font-medium" : "text-red-500"}>
+                      {ok ? "✓ Fourni" : "✗ Absent"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Liste des fichiers téléchargeables */}
+              <div>
+                <p className="text-xs font-semibold text-[#0A1628] mb-2">Fichiers disponibles :</p>
+                {projet.documents && projet.documents.length > 0 ? (
+                  <div className="space-y-2">
+                    {projet.documents.map((doc: any) => (
+                      <div key={doc.id} className="flex items-center justify-between gap-2 p-2 rounded bg-gray-50 border text-xs">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-[#0A1628] truncate" title={doc.nom}>{doc.nom}</p>
+                          <p className="text-[9px] text-[#6B7280] uppercase mt-0.5">{doc.type}</p>
+                        </div>
+                        <a
+                          href={doc.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-2.5 py-1 bg-[#0A1628] hover:bg-[#0A1628]/90 text-white rounded text-[10px] font-bold whitespace-nowrap transition-colors"
+                        >
+                          Ouvrir
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-[#6B7280] italic">Aucun fichier n&apos;a été téléversé pour ce projet.</p>
+                )}
+              </div>
             </div>
           </div>
 
