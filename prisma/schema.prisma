@@ -315,3 +315,11 @@ enum TypeEvenementSecurite {
   PROJET_PUBLIE
   DONNEES_EXPORTEES
 }
+
+// ── Paramètres globaux de la plateforme ──
+model SiteSettings {
+  id              String   @id @default("default")
+  scoringActif    Boolean  @default(true)     // true = scoring Oriz activé
+  projetsGratuits Boolean  @default(false)    // true = soumission gratuite
+  updatedAt       DateTime @updatedAt
+}

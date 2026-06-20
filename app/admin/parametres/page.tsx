@@ -54,6 +54,56 @@ export default function ParametresPage() {
     delaiScoring: "7",
     montantMin: "5000000",
   });
+
+  // ── Paramètres globaux (scoring + gratuité) ──
+  const [scoringActif, setScoringActif] = useState(true);
+  const [projetsGratuits, setProjetsGratuits] = useState(false);
+  const [settingsLoading, setSettingsLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/admin/settings")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success && data.settings) {
+          setScoringActif(data.settings.scoringActif);
+          setProjetsGratuits(data.settings.projetsGratuits);
+        }
+      })
+      .catch(console.error)
+      .finally(() => setSettingsLoading(false));
+  }, []);
+
+  const toggleSetting = async (key: "scoringActif" | "projetsGratuits", value: boolean) => {
+    // Optimistic update
+    if (key === "scoringActif") setScoringActif(value);
+    else setProjetsGratuits(value);
+
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [key]: value }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(
+          key === "scoringActif"
+            ? value ? "Scoring Oriz activé" : "Scoring Oriz désactivé"
+            : value ? "Gratuité des projets activée" : "Gratuité des projets désactivée"
+        );
+      } else {
+        // Revert on error
+        if (key === "scoringActif") setScoringActif(!value);
+        else setProjetsGratuits(!value);
+        showToast("Erreur lors de la sauvegarde");
+      }
+    } catch {
+      if (key === "scoringActif") setScoringActif(!value);
+      else setProjetsGratuits(!value);
+      showToast("Erreur réseau");
+    }
+  };
+
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("ANALYSTE");
@@ -202,6 +252,64 @@ export default function ParametresPage() {
             >
               Enregistrer les modifications
             </button>
+
+            {/* ── Toggles fonctionnels ── */}
+            <div className="border-t pt-6 mt-6 space-y-4">
+              <h2 className="font-bold text-[#0A1628]">Options de la plateforme</h2>
+
+              {settingsLoading ? (
+                <div className="flex items-center gap-2 py-4 text-[#6B7280] text-sm">
+                  <Loader2 size={16} className="animate-spin" />
+                  Chargement des paramètres…
+                </div>
+              ) : (
+                <>
+                  {/* Toggle scoring Oriz */}
+                  <div className="flex items-start justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                    <div className="flex-1 pr-4">
+                      <p className="text-sm font-medium text-[#0A1628]">Scoring des dossiers par Oriz</p>
+                      <p className="text-xs text-[#6B7280] mt-1">
+                        {scoringActif
+                          ? "Chaque dossier soumis passe par le scoring d'Oriz Advisory avant d'être publié."
+                          : "Le scoring est désactivé. Les projets peuvent être publiés sans notation préalable."}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => toggleSetting("scoringActif", !scoringActif)}
+                      className={cn(
+                        "w-11 h-6 rounded-full transition-colors flex items-center px-0.5 flex-shrink-0 mt-0.5",
+                        scoringActif ? "bg-[#2D6A4F]" : "bg-gray-300"
+                      )}
+                      aria-label="Activer/Désactiver le scoring Oriz"
+                    >
+                      <div className={cn("w-5 h-5 bg-white rounded-full shadow transition-transform", scoringActif ? "translate-x-5" : "")} />
+                    </button>
+                  </div>
+
+                  {/* Toggle gratuité projets */}
+                  <div className="flex items-start justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                    <div className="flex-1 pr-4">
+                      <p className="text-sm font-medium text-[#0A1628]">Gratuité de l&apos;ajout des projets</p>
+                      <p className="text-xs text-[#6B7280] mt-1">
+                        {projetsGratuits
+                          ? "Les porteurs peuvent soumettre leurs projets gratuitement, sans frais de forfait."
+                          : "Les porteurs doivent payer un forfait (Starter, Growth ou Premium) pour soumettre un projet."}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => toggleSetting("projetsGratuits", !projetsGratuits)}
+                      className={cn(
+                        "w-11 h-6 rounded-full transition-colors flex items-center px-0.5 flex-shrink-0 mt-0.5",
+                        projetsGratuits ? "bg-[#2D6A4F]" : "bg-gray-300"
+                      )}
+                      aria-label="Activer/Désactiver la gratuité des projets"
+                    >
+                      <div className={cn("w-5 h-5 bg-white rounded-full shadow transition-transform", projetsGratuits ? "translate-x-5" : "")} />
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         )}
 
