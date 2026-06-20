@@ -15,24 +15,26 @@ export async function GET() {
       }
     });
 
-    const targetEmail = 'mbalanti25@gmail.com';
-    const foundUser = allUsers.find(u => u.email.toLowerCase().includes(targetEmail.toLowerCase()));
+    const targetEmails = ['fabriceloic25@gmail.com', 'mbalanti25@gmail.com'];
+    const foundUsers = allUsers.filter(u => targetEmails.map(e => e.toLowerCase()).includes(u.email.toLowerCase()));
 
-    if (foundUser) {
-      await prisma.user.update({
-        where: { id: foundUser.id },
+    if (foundUsers.length > 0) {
+      await prisma.user.updateMany({
+        where: {
+          id: { in: foundUsers.map(u => u.id) }
+        },
         data: { role: 'ADMIN' }
       });
       return NextResponse.json({
         success: true,
-        message: `Rôle mis à jour en ADMIN pour l'utilisateur ${foundUser.email} !`,
+        message: `Rôle mis à jour en ADMIN pour: ${foundUsers.map(u => u.email).join(', ')} !`,
         allUsers
       });
     }
 
     return NextResponse.json({
       success: false,
-      message: `Aucun utilisateur contenant '${targetEmail}' n'a été trouvé.`,
+      message: `Aucun utilisateur dans la liste des cibles n'a été trouvé.`,
       allUsers
     });
   } catch (error: any) {
